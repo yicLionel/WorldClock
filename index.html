@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global TimeSync - World Clock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- SortableJS for drag-and-drop functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        /*
+        * CSS will go here to define the graphical designer's aesthetic.
+        * Focusing on clean lines, good typography (Inter font suggested),
+        * ample whitespace, subtle transitions, and intuitive layout.
+        * Variables for colors will be used for easy theme switching.
+        */
+        :root {
+            --background-light: #f8f8f8;
+            --text-light: #333;
+            --card-background-light: #ffffff;
+            --border-light: #e0e0e0;
+
+            --background-dark: #1a1a1a;
+            --text-dark: #e0e0e0;
+            --card-background-dark: #2a2a2a;
+            --border-dark: #3a3a3a;
+
+            --primary-color: #007bff; /* A nice blue for accents */
+            --secondary-color: #6c757d; /* Grey for less prominent elements */
+
+            --font-family: 'Inter', sans-serif;
+            --border-radius: 8px;
+            --spacing-unit: 16px;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-light);
+            color: var(--text-light);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+
+        /* Utility classes for layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: calc(2 * var(--spacing-unit));
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--card-background-light);
+            border-bottom: 1px solid var(--border-light);
+            padding: var(--spacing-unit) 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body.dark-mode header {
+            background-color: var(--card-background-dark);
+            border-color: var(--border-dark);
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: var(--spacing-unit);
+            align-items: center;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--secondary-color);
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        select {
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-light);
+            background-color: var(--card-background-light);
+            color: var(--text-light);
+            font-size: 1em;
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark-mode select {
+            border: 1px solid var(--border-dark);
+            background-color: var(--card-background-dark);
+            color: var(--text-dark);
+        }
+
+        /* Main Content */
+        main {
+            flex-grow: 1;
+            padding: var(--spacing-unit) 0;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-unit);
+            align-items: start; /* Align items to the top */
+        }
+
+        /* Time Card */
+        .time-card {
+            background-color: var(--card-background-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--border-radius);
+            padding: calc(1.5 * var(--spacing-unit));
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: calc(0.5 * var(--spacing-unit));
+            cursor: grab; /* Indicates draggable */
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body.dark-mode .time-card {
+            background-color: var(--card-background-dark);
+            border-color: var(--border-dark);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .time-card:active {
+            cursor: grabbing;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1); /* Lift effect on drag */
+        }
+
+        .time-card h3 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        .time-card .current-time {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-top: 5px;
+            color: var(--text-light); /* Or a slightly different shade */
+            transition: color 0.3s ease;
+        }
+
+        body.dark-mode .time-card .current-time {
+            color: var(--text-dark);
+        }
+
+        .time-card .date-display {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+        }
+
+        .time-card .offset-display {
+            font-size: 0.85em;
+            color: var(--secondary-color);
+        }
+
+        .remove-card {
+            align-self: flex-end; /* Pushes button to the right */
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 0;
+            transition: color 0.2s ease;
+        }
+
+        .remove-card:hover {
+            color: #dc3545; /* Red for delete */
+        }
+
+        /* Add Region Section */
+        .add-region-section {
+            background-color: var(--card-background-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--border-radius);
+            padding: calc(1.5 * var(--spacing-unit));
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            margin-bottom: var(--spacing-unit);
+            display: flex;
+            gap: var(--spacing-unit);
+            flex-wrap: wrap;
+            align-items: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body.dark-mode .add-region-section {
+            background-color: var(--card-background-dark);
+            border-color: var(--border-dark);
+        }
+
+        .add-region-section label {
+            font-weight: 500;
+        }
+
+        .add-region-section button {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease;
+        }
+
+        .add-region-section button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Countdown & Stopwatch Sections */
+        .utility-section {
+            background-color: var(--card-background-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--border-radius);
+            padding: calc(1.5 * var(--spacing-unit));
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            margin-top: var(--spacing-unit);
+            text-align: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body.dark-mode .utility-section {
+            background-color: var(--card-background-dark);
+            border-color: var(--border-dark);
+        }
+
+        .utility-section h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+            color: var(--primary-color);
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: 700;
+            margin: 20px 0;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        body.dark-mode .timer-display {
+            color: var(--text-dark);
+        }
+
+        .timer-controls button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease;
+        }
+
+        .timer-controls .start-btn {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        .timer-controls .start-btn:hover { background-color: #218838; }
+
+        .timer-controls .pause-btn {
+            background-color: #ffc107; /* Yellow */
+            color: #333;
+        }
+        .timer-controls .pause-btn:hover { background-color: #e0a800; }
+
+        .timer-controls .reset-btn {
+            background-color: #dc3545; /* Red */
+            color: white;
+        }
+        .timer-controls .reset-btn:hover { background-color: #c82333; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: var(--spacing-unit) 0;
+            margin-top: auto; /* Pushes footer to the bottom */
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            border-top: 1px solid var(--border-light);
+            transition: border-color 0.3s ease;
+        }
+
+        body.dark-mode footer {
+            border-color: var(--border-dark);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 data-en="Global TimeSync" data-zh="全球时间同步">Global TimeSync</h1>
+            <div class="controls">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+                <select id="language-switcher">
+                    <option value="en" selected data-en="English" data-zh="英语">English</option>
+                    <option value="zh" data-en="Chinese" data-zh="中文">中文</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Add Region Section -->
+        <section class="add-region-section">
+            <label for="timezone-select" data-en="Add Timezone:" data-zh="添加时区:">添加时区:</label>
+            <select id="timezone-select">
+                <!-- Options will be populated dynamically by JavaScript -->
+                <option value="" disabled selected data-en="Select a city/timezone..." data-zh="选择城市/时区...">选择城市/时区...</option>
+                <option value="America/New_York">America/New_York (New York)</option>
+                <option value="Europe/London">Europe/London (London)</option>
+                <option value="Asia/Shanghai">Asia/Shanghai (Shanghai)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (Tokyo)</option>
+                <option value="Australia/Sydney">Australia/Sydney (Sydney)</option>
+                <!-- Many more time zones would go here -->
+            </select>
+            <button id="add-timezone-btn" data-en="Add" data-zh="添加">添加</button>
+        </section>
+
+        <!-- World Clock Dashboard -->
+        <section class="dashboard" id="world-clock-dashboard">
+            <!-- Time cards will be dynamically added here by JavaScript -->
+            <div class="time-card" data-timezone="Australia/Melbourne">
+                <h3>Melbourne</h3>
+                <span class="current-time">00:00:00</span>
+                <span class="date-display">Mon, Jul 7, 2025</span>
+                <span class="offset-display">GMT+10:00</span>
+                <button class="remove-card" aria-label="Remove card">&times;</button>
+            </div>
+            <div class="time-card" data-timezone="America/Los_Angeles">
+                <h3>Los Angeles</h3>
+                <span class="current-time">00:00:00</span>
+                <span class="date-display">Sun, Jul 6, 2025</span>
+                <span class="offset-display">GMT-07:00</span>
+                <button class="remove-card" aria-label="Remove card">&times;</button>
+            </div>
+            <!-- Example of a pre-added card. Users can add more. -->
+        </section>
+
+        <hr> <!-- Separator for visual clarity -->
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-unit);">
+            <!-- Countdown Section -->
+            <section class="utility-section">
+                <h2 data-en="Countdown Timer" data-zh="倒计时">倒计时</h2>
+                <div class="timer-display" id="countdown-display">00:00:00</div>
+                <div class="timer-controls">
+                    <input type="number" id="countdown-minutes" placeholder="Minutes" min="0" style="width: 80px; padding: 8px; border-radius: var(--border-radius); border: 1px solid var(--border-light);">
+                    <button class="start-btn" id="countdown-start" data-en="Start" data-zh="开始">开始</button>
+                    <button class="pause-btn" id="countdown-pause" data-en="Pause" data-zh="暂停">暂停</button>
+                    <button class="reset-btn" id="countdown-reset" data-en="Reset" data-zh="重置">重置</button>
+                </div>
+            </section>
+
+            <!-- Stopwatch Section -->
+            <section class="utility-section">
+                <h2 data-en="Stopwatch" data-zh="秒表">秒表</h2>
+                <div class="timer-display" id="stopwatch-display">00:00:00</div>
+                <div class="timer-controls">
+                    <button class="start-btn" id="stopwatch-start" data-en="Start" data-zh="开始">开始</button>
+                    <button class="pause-btn" id="stopwatch-pause" data-en="Pause" data-zh="暂停">暂停</button>
+                    <button class="reset-btn" id="stopwatch-reset" data-en="Reset" data-zh="重置">重置</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p data-en="&copy; 2025 Global TimeSync. All rights reserved." data-zh="&copy; 2025 全球时间同步。保留所有权利。">&copy; 2025 Global TimeSync. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript will go here -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            const themeToggle = document.getElementById('theme-toggle');
+            const languageSwitcher = document.getElementById('language-switcher');
+            const elementsToTranslate = document.querySelectorAll('[data-en], [data-zh]');
+            const worldClockDashboard = document.getElementById('world-clock-dashboard');
+            const timezoneSelect = document.getElementById('timezone-select');
+            const addTimezoneBtn = document.getElementById('add-timezone-btn');
+
+            // --- Theme Toggle ---
+            themeToggle.addEventListener('change', () => {
+                body.classList.toggle('dark-mode', themeToggle.checked);
+                localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
+            });
+
+            // Load saved theme preference
+            if (localStorage.getItem('theme') === 'dark') {
+                body.classList.add('dark-mode');
+                themeToggle.checked = true;
+            }
+
+            // --- Language Switching ---
+            const setLanguage = (lang) => {
+                elementsToTranslate.forEach(element => {
+                    if (element.tagName === 'OPTION') { // Special handling for options
+                        element.textContent = element.dataset[lang];
+                    } else {
+                        element.textContent = element.dataset[lang];
+                    }
+                });
+                // Update specific placeholders if needed
+                const placeholderOption = timezoneSelect.querySelector('[disabled]');
+                if (placeholderOption) {
+                    placeholderOption.textContent = placeholderOption.dataset[lang];
+                }
+
+                // Update placeholder for minutes input in countdown
+                const countdownMinutesInput = document.getElementById('countdown-minutes');
+                if (lang === 'en') {
+                    countdownMinutesInput.placeholder = "Minutes";
+                } else {
+                    countdownMinutesInput.placeholder = "分钟";
+                }
+            };
+
+            languageSwitcher.addEventListener('change', (event) => {
+                setLanguage(event.target.value);
+                localStorage.setItem('language', event.target.value);
+            });
+
+            // Load saved language preference
+            const savedLanguage = localStorage.getItem('language') || 'en';
+            languageSwitcher.value = savedLanguage;
+            setLanguage(savedLanguage);
+
+            // --- Dynamic Time Cards ---
+            const updateClocks = () => {
+                document.querySelectorAll('.time-card').forEach(card => {
+                    const timezone = card.dataset.timezone;
+                    const now = new Date();
+                    const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: timezone };
+                    const optionsDate = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: timezone };
+
+                    const currentTime = now.toLocaleTimeString('en-US', optionsTime);
+                    const currentDate = now.toLocaleDateString('en-US', optionsDate);
+
+                    card.querySelector('.current-time').textContent = currentTime;
+                    card.querySelector('.date-display').textContent = currentDate;
+
+                    // Get time zone offset string (e.g., GMT+10:00)
+                    // This is a more robust way to get the offset string
+                    try {
+                        const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
+                            timeZone: timezone,
+                            timeZoneName: 'longOffset' // e.g., "GMT+10:00"
+                        });
+                        const parts = dateTimeFormat.formatToParts(now);
+                        const timeZoneNamePart = parts.find(part => part.type === 'timeZoneName');
+                        card.querySelector('.offset-display').textContent = timeZoneNamePart ? timeZoneNamePart.value : '';
+                    } catch (e) {
+                        console.error("Error getting timezone offset for", timezone, e);
+                        card.querySelector('.offset-display').textContent = 'Invalid Timezone';
+                    }
+                });
+            };
+
+            setInterval(updateClocks, 1000); // Update every second
+            updateClocks(); // Initial call
+
+            // Add Timezone functionality
+            addTimezoneBtn.addEventListener('click', () => {
+                const selectedTimezone = timezoneSelect.value;
+                if (selectedTimezone && !document.querySelector(`.time-card[data-timezone="${selectedTimezone}"]`)) {
+                    const newCard = document.createElement('div');
+                    newCard.classList.add('time-card');
+                    newCard.setAttribute('data-timezone', selectedTimezone);
+                    // Extract city name from timezone string (basic parsing)
+                    const cityName = selectedTimezone.split('/').pop().replace(/_/g, ' ');
+                    newCard.innerHTML = `
+                        <h3>${cityName}</h3>
+                        <span class="current-time">--:--:--</span>
+                        <span class="date-display">-- --, ----</span>
+                        <span class="offset-display">---</span>
+                        <button class="remove-card" aria-label="Remove card">&times;</button>
+                    `;
+                    worldClockDashboard.appendChild(newCard);
+                    updateClocks(); // Update the newly added card immediately
+
+                    newCard.querySelector('.remove-card').addEventListener('click', () => {
+                        newCard.remove();
+                    });
+
+                    // Reinitialize Sortable if already active
+                    if (Sortable.active) {
+                        Sortable.active.destroy();
+                    }
+                    new Sortable(worldClockDashboard, {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost' // Class name for the drop placeholder
+                    });
+                }
+            });
+
+            // Remove card functionality
+            worldClockDashboard.addEventListener('click', (event) => {
+                if (event.target.classList.contains('remove-card')) {
+                    event.target.closest('.time-card').remove();
+                }
+            });
+
+
+            // --- Countdown Timer ---
+            const countdownDisplay = document.getElementById('countdown-display');
+            const countdownMinutesInput = document.getElementById('countdown-minutes');
+            const countdownStartBtn = document.getElementById('countdown-start');
+            const countdownPauseBtn = document.getElementById('countdown-pause');
+            const countdownResetBtn = document.getElementById('countdown-reset');
+            let countdownInterval;
+            let timeRemaining = 0; // in seconds
+
+            const formatTime = (totalSeconds) => {
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                return [hours, minutes, seconds]
+                    .map(unit => String(unit).padStart(2, '0'))
+                    .join(':');
+            };
+
+            countdownStartBtn.addEventListener('click', () => {
+                if (timeRemaining === 0) {
+                    const minutes = parseInt(countdownMinutesInput.value);
+                    if (isNaN(minutes) || minutes <= 0) {
+                        // Using a custom alert-like message instead of window.alert
+                        displayMessage('Please enter a valid number of minutes for the countdown.', 'error');
+                        return;
+                    }
+                    timeRemaining = minutes * 60;
+                }
+
+                if (countdownInterval) clearInterval(countdownInterval);
+                countdownInterval = setInterval(() => {
+                    if (timeRemaining <= 0) {
+                        clearInterval(countdownInterval);
+                        countdownDisplay.textContent = "00:00:00";
+                        displayMessage('Countdown finished!', 'success');
+                        return;
+                    }
+                    timeRemaining--;
+                    countdownDisplay.textContent = formatTime(timeRemaining);
+                }, 1000);
+            });
+
+            countdownPauseBtn.addEventListener('click', () => {
+                clearInterval(countdownInterval);
+            });
+
+            countdownResetBtn.addEventListener('click', () => {
+                clearInterval(countdownInterval);
+                timeRemaining = 0;
+                countdownDisplay.textContent = "00:00:00";
+                countdownMinutesInput.value = '';
+            });
+
+            // --- Stopwatch ---
+            const stopwatchDisplay = document.getElementById('stopwatch-display');
+            const stopwatchStartBtn = document.getElementById('stopwatch-start');
+            const stopwatchPauseBtn = document.getElementById('stopwatch-pause');
+            const stopwatchResetBtn = document.getElementById('stopwatch-reset');
+            let stopwatchInterval;
+            let elapsedTime = 0; // in seconds
+
+            stopwatchStartBtn.addEventListener('click', () => {
+                if (stopwatchInterval) clearInterval(stopwatchInterval);
+                stopwatchInterval = setInterval(() => {
+                    elapsedTime++;
+                    stopwatchDisplay.textContent = formatTime(elapsedTime);
+                }, 1000);
+            });
+
+            stopwatchPauseBtn.addEventListener('click', () => {
+                clearInterval(stopwatchInterval);
+            });
+
+            stopwatchResetBtn.addEventListener('click', () => {
+                clearInterval(stopwatchInterval);
+                elapsedTime = 0;
+                stopwatchDisplay.textContent = "00:00:00";
+            });
+
+            // --- Drag and Drop (SortableJS) ---
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(worldClockDashboard, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost' // Class name for the drop placeholder
+                });
+            } else {
+                console.warn('SortableJS library not loaded. Drag and drop functionality will not work. Please include Sortable.min.js');
+            }
+
+            // --- Message Box (instead of alert) ---
+            const createMessageBox = () => {
+                const messageBox = document.createElement('div');
+                messageBox.id = 'custom-message-box';
+                messageBox.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: var(--card-background-light);
+                    border: 1px solid var(--border-light);
+                    border-radius: var(--border-radius);
+                    padding: 20px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    display: none;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 15px;
+                    min-width: 250px;
+                    text-align: center;
+                    transition: background-color 0.3s ease, border-color 0.3s ease;
+                `;
+                messageBox.innerHTML = `
+                    <p id="message-content" style="margin: 0; font-size: 1.1em;"></p>
+                    <button id="message-ok-btn" style="
+                        padding: 8px 15px;
+                        background-color: var(--primary-color);
+                        color: white;
+                        border: none;
+                        border-radius: var(--border-radius);
+                        cursor: pointer;
+                        font-size: 1em;
+                        transition: background-color 0.2s ease;
+                    ">OK</button>
+                `;
+                document.body.appendChild(messageBox);
+
+                document.getElementById('message-ok-btn').addEventListener('click', () => {
+                    messageBox.style.display = 'none';
+                });
+
+                // Dark mode styling for message box
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.attributeName === 'class' && body.classList.contains('dark-mode')) {
+                            messageBox.style.backgroundColor = 'var(--card-background-dark)';
+                            messageBox.style.borderColor = 'var(--border-dark)';
+                            messageBox.querySelector('#message-content').style.color = 'var(--text-dark)';
+                        } else if (mutation.attributeName === 'class' && !body.classList.contains('dark-mode')) {
+                            messageBox.style.backgroundColor = 'var(--card-background-light)';
+                            messageBox.style.borderColor = 'var(--border-light)';
+                            messageBox.querySelector('#message-content').style.color = 'var(--text-light)';
+                        }
+                    });
+                });
+                observer.observe(body, { attributes: true });
+            };
+
+            const displayMessage = (message, type = 'info') => {
+                let messageBox = document.getElementById('custom-message-box');
+                if (!messageBox) {
+                    createMessageBox();
+                    messageBox = document.getElementById('custom-message-box');
+                }
+                const messageContent = document.getElementById('message-content');
+                messageContent.textContent = message;
+
+                if (type === 'error') {
+                    messageContent.style.color = '#dc3545'; // Red for errors
+                } else if (type === 'success') {
+                    messageContent.style.color = '#28a745'; // Green for success
+                } else {
+                    messageContent.style.color = 'var(--text-light)'; // Default color
+                    if (body.classList.contains('dark-mode')) {
+                        messageContent.style.color = 'var(--text-dark)';
+                    }
+                }
+
+                messageBox.style.display = 'flex';
+            };
+
+
+            // A more complete list of timezones for the select element (truncated for example)
+            const allTimezones = [
+                "Africa/Algiers", "Africa/Cairo", "Africa/Casablanca", "Africa/Johannesburg",
+                "America/Anchorage", "America/Argentina/Buenos_Aires", "America/Bogota", "America/Caracas",
+                "America/Chicago", "America/Denver", "America/Detroit", "America/El_Salvador",
+                "America/Halifax", "America/Havana", "America/Indianapolis", "America/Jamaica",
+                "America/Juneau", "America/Lima", "America/Los_Angeles", "America/Mexico_City",
+                "America/New_York", "America/Noronha", "America/Phoenix", "America/Sao_Paulo",
+                "America/St_Johns", "America/Vancouver", "Asia/Baghdad", "Asia/Bangkok",
+                "Asia/Beirut", "Asia/Colombo", "Asia/Damascus", "Asia/Dhaka", "Asia/Dubai",
+                "Asia/Hong_Kong", "Asia/Jakarta", "Asia/Jerusalem", "Asia/Kabul", "Asia/Karachi",
+                "Asia/Kathmandu", "Asia/Kolkata", "Asia/Kuala_Lumpur", "Asia/Manila",
+                "Asia/Nicosia", "Asia/Qatar", "Asia/Riyadh", "Asia/Seoul", "Asia/Shanghai",
+                "Asia/Singapore", "Asia/Taipei", "Asia/Tehran", "Asia/Tokyo", "Asia/Ulaanbaatar",
+                "Asia/Vladivostok", "Atlantic/Azores", "Atlantic/Cape_Verde", "Atlantic/Reykjavik",
+                "Australia/Adelaide", "Australia/Brisbane", "Australia/Darwin", "Australia/Hobart",
+                "Australia/Perth", "Australia/Sydney", "Europe/Amsterdam", "Europe/Athens",
+                "Europe/Berlin", "Europe/Brussels", "Europe/Bucharest", "Europe/Budapest",
+                "Europe/Copenhagen", "Europe/Dublin", "Europe/Helsinki", "Europe/Istanbul",
+                "Europe/Kaliningrad", "Europe/Kiev", "Europe/Lisbon", "Europe/London",
+                "Europe/Madrid", "Europe/Moscow", "Europe/Oslo", "Europe/Paris", "Europe/Prague",
+                "Europe/Rome", "Europe/Sofia", "Europe/Stockholm", "Europe/Tallinn", "Europe/Vienna",
+                "Europe/Vilnius", "Europe/Warsaw", "Europe/Zurich", "Pacific/Auckland",
+                "Pacific/Chatham", "Pacific/Fiji", "Pacific/Honolulu", "Pacific/Kiritimati",
+                "Pacific/Midway", "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Port_Moresby",
+                "Pacific/Tongatapu",
+                // ... and many more
+            ];
+
+            const populateTimezoneSelect = () => {
+                allTimezones.forEach(tz => {
+                    const option = document.createElement('option');
+                    option.value = tz;
+                    option.textContent = tz.replace(/_/g, ' '); // Simple formatting
+                    timezoneSelect.appendChild(option);
+                });
+            };
+            populateTimezoneSelect();
+
+        });
+    </script>
+</body>
+</html>
