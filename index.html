@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global TimeSync - World Clock</title>
+    <title data-en="Global TimeSync - World Clock" data-zh="全球时间同步 - 世界时钟">Global TimeSync - World Clock</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -93,6 +93,12 @@
             align-items: center;
         }
 
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Space between text and toggle */
+        }
+
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -138,7 +144,7 @@
             transform: translateX(16px);
         }
 
-        select {
+        select, input[type="text"], input[type="number"] {
             padding: 8px 12px;
             border-radius: var(--border-radius);
             border: 1px solid var(--border-light);
@@ -148,7 +154,7 @@
             transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
         }
 
-        body.dark-mode select {
+        body.dark-mode select, body.dark-mode input[type="text"], body.dark-mode input[type="number"] {
             border: 1px solid var(--border-dark);
             background-color: var(--card-background-dark);
             color: var(--text-dark);
@@ -200,7 +206,7 @@
         }
 
         .time-card .current-time {
-            font-size: 2.5em;
+            font-size: 3.5em; /* Increased size */
             font-weight: 700;
             margin-top: 5px;
             color: var(--text-light); /* Or a slightly different shade */
@@ -359,10 +365,14 @@
         <div class="container">
             <h1 data-en="Global TimeSync" data-zh="全球时间同步">Global TimeSync</h1>
             <div class="controls">
-                <label class="toggle-switch">
-                    <input type="checkbox" id="theme-toggle">
-                    <span class="slider"></span>
-                </label>
+                <div class="theme-switcher">
+                    <span data-en="Light" data-zh="浅色">浅色</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span data-en="Dark" data-zh="深色">深色</span>
+                </div>
                 <select id="language-switcher">
                     <option value="en" selected data-en="English" data-zh="英语">English</option>
                     <option value="zh" data-en="Chinese" data-zh="中文">中文</option>
@@ -374,38 +384,34 @@
     <main class="container">
         <!-- Add Region Section -->
         <section class="add-region-section">
-            <label for="timezone-select" data-en="Add Timezone:" data-zh="添加时区:">添加时区:</label>
+            <label for="timezone-search-input" data-en="Search Timezone:" data-zh="搜索时区:">搜索时区:</label>
+            <input type="text" id="timezone-search-input" placeholder="Search for a city or timezone..." data-en-placeholder="Search for a city or timezone..." data-zh-placeholder="搜索城市或时区...">
+            <label for="timezone-select" data-en="Select Timezone:" data-zh="选择时区:">选择时区:</label>
             <select id="timezone-select">
                 <!-- Options will be populated dynamically by JavaScript -->
                 <option value="" disabled selected data-en="Select a city/timezone..." data-zh="选择城市/时区...">选择城市/时区...</option>
-                <option value="America/New_York">America/New_York (New York)</option>
-                <option value="Europe/London">Europe/London (London)</option>
-                <option value="Asia/Shanghai">Asia/Shanghai (Shanghai)</option>
-                <option value="Asia/Tokyo">Asia/Tokyo (Tokyo)</option>
-                <option value="Australia/Sydney">Australia/Sydney (Sydney)</option>
-                <!-- Many more time zones would go here -->
+                <!-- Timezones populated by JS -->
             </select>
             <button id="add-timezone-btn" data-en="Add" data-zh="添加">添加</button>
         </section>
 
         <!-- World Clock Dashboard -->
         <section class="dashboard" id="world-clock-dashboard">
-            <!-- Time cards will be dynamically added here by JavaScript -->
+            <!-- Initial Time cards, their titles will be set by JS on load -->
             <div class="time-card" data-timezone="Australia/Melbourne">
-                <h3>Melbourne</h3>
+                <h3 data-timezone-name="Australia/Melbourne"></h3>
                 <span class="current-time">00:00:00</span>
-                <span class="date-display">Mon, Jul 7, 2025</span>
+                <span class="date-display"></span>
                 <span class="offset-display">GMT+10:00</span>
                 <button class="remove-card" aria-label="Remove card">&times;</button>
             </div>
             <div class="time-card" data-timezone="America/Los_Angeles">
-                <h3>Los Angeles</h3>
+                <h3 data-timezone-name="America/Los_Angeles"></h3>
                 <span class="current-time">00:00:00</span>
-                <span class="date-display">Sun, Jul 6, 2025</span>
+                <span class="date-display"></span>
                 <span class="offset-display">GMT-07:00</span>
                 <button class="remove-card" aria-label="Remove card">&times;</button>
             </div>
-            <!-- Example of a pre-added card. Users can add more. -->
         </section>
 
         <hr> <!-- Separator for visual clarity -->
@@ -446,10 +452,19 @@
             const body = document.body;
             const themeToggle = document.getElementById('theme-toggle');
             const languageSwitcher = document.getElementById('language-switcher');
-            const elementsToTranslate = document.querySelectorAll('[data-en], [data-zh]');
+            const elementsToTranslate = document.querySelectorAll('[data-en], [data-zh], [data-en-placeholder], [data-zh-placeholder]');
             const worldClockDashboard = document.getElementById('world-clock-dashboard');
             const timezoneSelect = document.getElementById('timezone-select');
             const addTimezoneBtn = document.getElementById('add-timezone-btn');
+            const timezoneSearchInput = document.getElementById('timezone-search-input');
+
+            // --- Localized messages for displayMessage function ---
+            const messages = {
+                'invalidCountdownInput': { en: 'Please enter a valid number of minutes for the countdown.', zh: '请输入有效的倒计时分钟数。' },
+                'countdownFinished': { en: 'Countdown finished!', zh: '倒计时结束！' },
+                'timezoneAlreadyAdded': { en: 'This timezone is already added.', zh: '此时区已添加。' },
+                'selectTimezoneToAdd': { en: 'Please select a timezone to add.', zh: '请选择要添加的时区。' }
+            };
 
             // --- Theme Toggle ---
             themeToggle.addEventListener('change', () => {
@@ -465,58 +480,66 @@
 
             // --- Language Switching ---
             const setLanguage = (lang) => {
+                // Translate static elements
                 elementsToTranslate.forEach(element => {
-                    if (element.tagName === 'OPTION') { // Special handling for options
-                        element.textContent = element.dataset[lang];
-                    } else {
+                    if (element.tagName === 'OPTION') {
+                        const timezoneValue = element.value;
+                        if (timezoneValue && timezoneDisplayNames[timezoneValue]) {
+                            element.textContent = timezoneDisplayNames[timezoneValue][lang] || timezoneDisplayNames[timezoneValue]['en'];
+                        } else if (element.hasAttribute(`data-${lang}`)) {
+                            element.textContent = element.dataset[lang];
+                        }
+                    } else if (element.hasAttribute(`data-${lang}`)) {
                         element.textContent = element.dataset[lang];
                     }
+                    if (element.hasAttribute(`data-${lang}-placeholder`)) {
+                        element.placeholder = element.dataset[`${lang}-placeholder`];
+                    }
                 });
-                // Update specific placeholders if needed
-                const placeholderOption = timezoneSelect.querySelector('[disabled]');
-                if (placeholderOption) {
-                    placeholderOption.textContent = placeholderOption.dataset[lang];
-                }
 
-                // Update placeholder for minutes input in countdown
-                const countdownMinutesInput = document.getElementById('countdown-minutes');
-                if (lang === 'en') {
-                    countdownMinutesInput.placeholder = "Minutes";
-                } else {
-                    countdownMinutesInput.placeholder = "分钟";
-                }
+                // Translate titles of existing time cards
+                document.querySelectorAll('.time-card h3[data-timezone-name]').forEach(h3 => {
+                    const timezoneKey = h3.dataset.timezoneName;
+                    if (timezoneDisplayNames[timezoneKey]) {
+                        h3.textContent = timezoneDisplayNames[timezoneKey][lang] || timezoneDisplayNames[timezoneKey]['en'];
+                    }
+                });
+
+                // Update dates and weekdays on all time cards
+                updateClocks();
             };
 
             languageSwitcher.addEventListener('change', (event) => {
                 setLanguage(event.target.value);
                 localStorage.setItem('language', event.target.value);
+                populateTimezoneSelect(timezoneSearchInput.value); // Re-populate to update options
             });
 
-            // Load saved language preference
+            // Load saved language preference and apply
             const savedLanguage = localStorage.getItem('language') || 'en';
             languageSwitcher.value = savedLanguage;
-            setLanguage(savedLanguage);
+            // setLanguage(savedLanguage) will be called after initial populate and initial card title update
 
             // --- Dynamic Time Cards ---
             const updateClocks = () => {
+                const currentLang = languageSwitcher.value; // Get current language for date formatting
                 document.querySelectorAll('.time-card').forEach(card => {
                     const timezone = card.dataset.timezone;
                     const now = new Date();
                     const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: timezone };
+                    // Use currentLang for date formatting
                     const optionsDate = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: timezone };
 
-                    const currentTime = now.toLocaleTimeString('en-US', optionsTime);
-                    const currentDate = now.toLocaleDateString('en-US', optionsDate);
+                    const currentTime = now.toLocaleTimeString('en-US', optionsTime); // Time format is generally consistent
+                    const currentDate = now.toLocaleDateString(currentLang, optionsDate); // Localize date and weekday
 
                     card.querySelector('.current-time').textContent = currentTime;
                     card.querySelector('.date-display').textContent = currentDate;
 
-                    // Get time zone offset string (e.g., GMT+10:00)
-                    // This is a more robust way to get the offset string
                     try {
                         const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
                             timeZone: timezone,
-                            timeZoneName: 'longOffset' // e.g., "GMT+10:00"
+                            timeZoneName: 'longOffset'
                         });
                         const parts = dateTimeFormat.formatToParts(now);
                         const timeZoneNamePart = parts.find(part => part.type === 'timeZoneName');
@@ -531,6 +554,147 @@
             setInterval(updateClocks, 1000); // Update every second
             updateClocks(); // Initial call
 
+            // --- Timezone Data and Localized Names ---
+            const timezoneDisplayNames = {
+                "Africa/Algiers": { en: "Algiers", zh: "阿尔及尔" },
+                "Africa/Cairo": { en: "Cairo", zh: "开罗" },
+                "Africa/Casablanca": { en: "Casablanca", zh: "卡萨布兰卡" },
+                "Africa/Johannesburg": { en: "Johannesburg", zh: "约翰内斯堡" },
+                "America/Anchorage": { en: "Anchorage", zh: "安克雷奇" },
+                "America/Argentina/Buenos_Aires": { en: "Buenos Aires", zh: "布宜诺斯艾利斯" },
+                "America/Bogota": { en: "Bogota", zh: "波哥大" },
+                "America/Caracas": { en: "Caracas", zh: "加拉加斯" },
+                "America/Chicago": { en: "Chicago", zh: "芝加哥" },
+                "America/Denver": { en: "Denver", zh: "丹佛" },
+                "America/Detroit": { en: "Detroit", zh: "底特律" },
+                "America/El_Salvador": { en: "El Salvador", zh: "萨尔瓦多" },
+                "America/Halifax": { en: "Halifax", zh: "哈利法克斯" },
+                "America/Havana": { en: "Havana", zh: "哈瓦那" },
+                "America/Indianapolis": { en: "Indianapolis", zh: "印第安纳波利斯" },
+                "America/Jamaica": { en: "Jamaica", zh: "牙买加" },
+                "America/Juneau": { en: "Juneau", zh: "朱诺" },
+                "America/Lima": { en: "Lima", zh: "利马" },
+                "America/Los_Angeles": { en: "Los Angeles", zh: "洛杉矶" },
+                "America/Mexico_City": { en: "Mexico City", zh: "墨西哥城" },
+                "America/New_York": { en: "New York", zh: "纽约" },
+                "America/Noronha": { en: "Noronha", zh: "诺罗尼亚" },
+                "America/Phoenix": { en: "Phoenix", zh: "凤凰城" },
+                "America/Sao_Paulo": { en: "Sao Paulo", zh: "圣保罗" },
+                "America/St_Johns": { en: "St. John's", zh: "圣约翰斯" },
+                "America/Vancouver": { en: "Vancouver", zh: "温哥华" },
+                "Asia/Baghdad": { en: "Baghdad", zh: "巴格达" },
+                "Asia/Bangkok": { en: "Bangkok", zh: "曼谷" },
+                "Asia/Beirut": { en: "Beirut", zh: "贝鲁特" },
+                "Asia/Colombo": { en: "Colombo", zh: "科伦坡" },
+                "Asia/Damascus": { en: "Damascus", zh: "大马士革" },
+                "Asia/Dhaka": { en: "Dhaka", zh: "达卡" },
+                "Asia/Dubai": { en: "Dubai", zh: "迪拜" },
+                "Asia/Hong_Kong": { en: "Hong Kong", zh: "香港" },
+                "Asia/Jakarta": { en: "Jakarta", zh: "雅加达" },
+                "Asia/Jerusalem": { en: "Jerusalem", zh: "耶路撒冷" },
+                "Asia/Kabul": { en: "Kabul", zh: "喀布尔" },
+                "Asia/Karachi": { en: "Karachi", zh: "卡拉奇" },
+                "Asia/Kathmandu": { en: "Kathmandu", zh: "加德满都" },
+                "Asia/Kolkata": { en: "Kolkata", zh: "加尔各答" },
+                "Asia/Kuala_Lumpur": { en: "Kuala Lumpur", zh: "吉隆坡" },
+                "Asia/Manila": { en: "Manila", zh: "马尼拉" },
+                "Asia/Nicosia": { en: "Nicosia", zh: "尼科西亚" },
+                "Asia/Qatar": { en: "Qatar", zh: "卡塔尔" },
+                "Asia/Riyadh": { en: "Riyadh", zh: "利雅得" },
+                "Asia/Seoul": { en: "Seoul", zh: "首尔" },
+                "Asia/Shanghai": { en: "Shanghai", zh: "上海" },
+                "Asia/Singapore": { en: "Singapore", zh: "新加坡" },
+                "Asia/Taipei": { en: "Taipei", zh: "台北" },
+                "Asia/Tehran": { en: "Tehran", zh: "德黑兰" },
+                "Asia/Tokyo": { en: "Tokyo", zh: "东京" },
+                "Asia/Ulaanbaatar": { en: "Ulaanbaatar", zh: "乌兰巴托" },
+                "Asia/Vladivostok": { en: "Vladivostok", zh: "符拉迪沃斯托克" },
+                "Atlantic/Azores": { en: "Azores", zh: "亚速尔群岛" },
+                "Atlantic/Cape_Verde": { en: "Cape Verde", zh: "佛得角" },
+                "Atlantic/Reykjavik": { en: "Reykjavik", zh: "雷克雅未克" },
+                "Australia/Adelaide": { en: "Adelaide", zh: "阿德莱德" },
+                "Australia/Brisbane": { en: "Brisbane", zh: "布里斯班" },
+                "Australia/Darwin": { en: "Darwin", zh: "达尔文" },
+                "Australia/Hobart": { en: "Hobart", zh: "霍巴特" },
+                "Australia/Perth": { en: "Perth", zh: "珀斯" },
+                "Australia/Sydney": { en: "Sydney", zh: "悉尼" },
+                "Australia/Melbourne": { en: "Melbourne", zh: "墨尔本" },
+                "America/Los_Angeles": { en: "Los Angeles", zh: "洛杉矶" },
+                "Europe/Amsterdam": { en: "Amsterdam", zh: "阿姆斯特丹" },
+                "Europe/Athens": { en: "Athens", zh: "雅典" },
+                "Europe/Berlin": { en: "Berlin", zh: "柏林" },
+                "Europe/Brussels": { en: "Brussels", zh: "布鲁塞尔" },
+                "Europe/Bucharest": { en: "Bucharest", zh: "布加勒斯特" },
+                "Europe/Budapest": { en: "Budapest", zh: "布达佩斯" },
+                "Europe/Copenhagen": { en: "Copenhagen", zh: "哥本哈根" },
+                "Europe/Dublin": { en: "Dublin", zh: "都柏林" },
+                "Europe/Helsinki": { en: "Helsinki", zh: "赫尔辛基" },
+                "Europe/Istanbul": { en: "Istanbul", zh: "伊斯坦布尔" },
+                "Europe/Kaliningrad": { en: "Kaliningrad", zh: "加里宁格勒" },
+                "Europe/Kiev": { en: "Kiev", zh: "基辅" },
+                "Europe/Lisbon": { en: "Lisbon", zh: "里斯本" },
+                "Europe/London": { en: "London", zh: "伦敦" },
+                "Europe/Madrid": { en: "Madrid", zh: "马德里" },
+                "Europe/Moscow": { en: "Moscow", zh: "莫斯科" },
+                "Europe/Oslo": { en: "Oslo", zh: "奥斯陆" },
+                "Europe/Paris": { en: "Paris", zh: "巴黎" },
+                "Europe/Prague": { en: "Prague", zh: "布拉格" },
+                "Europe/Rome": { en: "Rome", zh: "罗马" },
+                "Europe/Sofia": { en: "Sofia", zh: "索非亚" },
+                "Europe/Stockholm": { en: "Stockholm", zh: "斯德哥尔摩" },
+                "Europe/Tallinn": { en: "Tallinn", zh: "塔林" },
+                "Europe/Vienna": { en: "Vienna", zh: "维也纳" },
+                "Europe/Vilnius": { en: "Vilnius", zh: "维尔纽斯" },
+                "Europe/Warsaw": { en: "Warsaw", zh: "华沙" },
+                "Europe/Zurich": { en: "Zurich", zh: "苏黎世" },
+                "Pacific/Auckland": { en: "Auckland", zh: "奥克兰" },
+                "Pacific/Chatham": { en: "Chatham", zh: "查塔姆" },
+                "Pacific/Fiji": { en: "Fiji", zh: "斐济" },
+                "Pacific/Honolulu": { en: "Honolulu", zh: "檀香山" },
+                "Pacific/Kiritimati": { en: "Kiritimati", zh: "基里巴斯" },
+                "Pacific/Midway": { en: "Midway", zh: "中途岛" },
+                "Pacific/Noumea": { en: "Noumea", zh: "努美阿" },
+                "Pacific/Pago_Pago": { en: "Pago Pago", zh: "帕果帕果" },
+                "Pacific/Port_Moresby": { en: "Port Moresby", zh: "莫尔兹比港" },
+                "Pacific/Tongatapu": { en: "Tongatapu", zh: "汤加塔布" },
+            };
+
+            const allTimezoneKeys = Object.keys(timezoneDisplayNames);
+
+            const populateTimezoneSelect = (filterTerm = '') => {
+                while (timezoneSelect.options.length > 1) {
+                    timezoneSelect.remove(1);
+                }
+
+                const lowerCaseFilter = filterTerm.toLowerCase();
+                const currentLang = languageSwitcher.value;
+
+                allTimezoneKeys.filter(tz => {
+                    const displayNameEn = timezoneDisplayNames[tz]['en'].toLowerCase();
+                    const displayNameZh = timezoneDisplayNames[tz]['zh'].toLowerCase();
+                    const ianaName = tz.toLowerCase();
+                    return ianaName.includes(lowerCaseFilter) ||
+                           displayNameEn.includes(lowerCaseFilter) ||
+                           displayNameZh.includes(lowerCaseFilter);
+                }).forEach(tz => {
+                    const option = document.createElement('option');
+                    option.value = tz;
+                    option.textContent = timezoneDisplayNames[tz][currentLang] || timezoneDisplayNames[tz]['en'];
+                    timezoneSelect.appendChild(option);
+                });
+                timezoneSelect.value = "";
+                setLanguage(currentLang); // Re-apply language to ensure placeholder and existing card titles are correct
+            };
+
+            // Initial population and language application
+            populateTimezoneSelect();
+            setLanguage(savedLanguage); // Apply language to all elements after initial population
+
+            // Search input event listener
+            timezoneSearchInput.addEventListener('input', (event) => {
+                populateTimezoneSelect(event.target.value);
+            });
+
             // Add Timezone functionality
             addTimezoneBtn.addEventListener('click', () => {
                 const selectedTimezone = timezoneSelect.value;
@@ -538,30 +702,35 @@
                     const newCard = document.createElement('div');
                     newCard.classList.add('time-card');
                     newCard.setAttribute('data-timezone', selectedTimezone);
-                    // Extract city name from timezone string (basic parsing)
-                    const cityName = selectedTimezone.split('/').pop().replace(/_/g, ' ');
+                    
+                    const currentLang = languageSwitcher.value;
+                    const displayCityName = timezoneDisplayNames[selectedTimezone][currentLang] || timezoneDisplayNames[selectedTimezone]['en'];
+
                     newCard.innerHTML = `
-                        <h3>${cityName}</h3>
+                        <h3 data-timezone-name="${selectedTimezone}">${displayCityName}</h3>
                         <span class="current-time">--:--:--</span>
-                        <span class="date-display">-- --, ----</span>
+                        <span class="date-display"></span>
                         <span class="offset-display">---</span>
                         <button class="remove-card" aria-label="Remove card">&times;</button>
                     `;
                     worldClockDashboard.appendChild(newCard);
-                    updateClocks(); // Update the newly added card immediately
+                    updateClocks();
 
                     newCard.querySelector('.remove-card').addEventListener('click', () => {
                         newCard.remove();
                     });
 
-                    // Reinitialize Sortable if already active
                     if (Sortable.active) {
                         Sortable.active.destroy();
                     }
                     new Sortable(worldClockDashboard, {
                         animation: 150,
-                        ghostClass: 'sortable-ghost' // Class name for the drop placeholder
+                        ghostClass: 'sortable-ghost'
                     });
+                } else if (document.querySelector(`.time-card[data-timezone="${selectedTimezone}"]`)) {
+                    displayMessage('timezoneAlreadyAdded', 'info'); // Use message key
+                } else {
+                    displayMessage('selectTimezoneToAdd', 'error'); // Use message key
                 }
             });
 
@@ -595,8 +764,7 @@
                 if (timeRemaining === 0) {
                     const minutes = parseInt(countdownMinutesInput.value);
                     if (isNaN(minutes) || minutes <= 0) {
-                        // Using a custom alert-like message instead of window.alert
-                        displayMessage('Please enter a valid number of minutes for the countdown.', 'error');
+                        displayMessage('invalidCountdownInput', 'error'); // Use message key
                         return;
                     }
                     timeRemaining = minutes * 60;
@@ -607,7 +775,7 @@
                     if (timeRemaining <= 0) {
                         clearInterval(countdownInterval);
                         countdownDisplay.textContent = "00:00:00";
-                        displayMessage('Countdown finished!', 'success');
+                        displayMessage('countdownFinished', 'success'); // Use message key
                         return;
                     }
                     timeRemaining--;
@@ -656,7 +824,7 @@
             if (typeof Sortable !== 'undefined') {
                 new Sortable(worldClockDashboard, {
                     animation: 150,
-                    ghostClass: 'sortable-ghost' // Class name for the drop placeholder
+                    ghostClass: 'sortable-ghost'
                 });
             } else {
                 console.warn('SortableJS library not loaded. Drag and drop functionality will not work. Please include Sortable.min.js');
@@ -721,21 +889,22 @@
                 observer.observe(body, { attributes: true });
             };
 
-            const displayMessage = (message, type = 'info') => {
+            const displayMessage = (messageKey, type = 'info') => {
                 let messageBox = document.getElementById('custom-message-box');
                 if (!messageBox) {
                     createMessageBox();
                     messageBox = document.getElementById('custom-message-box');
                 }
                 const messageContent = document.getElementById('message-content');
-                messageContent.textContent = message;
+                const currentLang = languageSwitcher.value;
+                messageContent.textContent = messages[messageKey][currentLang] || messages[messageKey]['en']; // Get localized message
 
                 if (type === 'error') {
-                    messageContent.style.color = '#dc3545'; // Red for errors
+                    messageContent.style.color = '#dc3545';
                 } else if (type === 'success') {
-                    messageContent.style.color = '#28a745'; // Green for success
+                    messageContent.style.color = '#28a745';
                 } else {
-                    messageContent.style.color = 'var(--text-light)'; // Default color
+                    messageContent.style.color = 'var(--text-light)';
                     if (body.classList.contains('dark-mode')) {
                         messageContent.style.color = 'var(--text-dark)';
                     }
@@ -743,47 +912,6 @@
 
                 messageBox.style.display = 'flex';
             };
-
-
-            // A more complete list of timezones for the select element (truncated for example)
-            const allTimezones = [
-                "Africa/Algiers", "Africa/Cairo", "Africa/Casablanca", "Africa/Johannesburg",
-                "America/Anchorage", "America/Argentina/Buenos_Aires", "America/Bogota", "America/Caracas",
-                "America/Chicago", "America/Denver", "America/Detroit", "America/El_Salvador",
-                "America/Halifax", "America/Havana", "America/Indianapolis", "America/Jamaica",
-                "America/Juneau", "America/Lima", "America/Los_Angeles", "America/Mexico_City",
-                "America/New_York", "America/Noronha", "America/Phoenix", "America/Sao_Paulo",
-                "America/St_Johns", "America/Vancouver", "Asia/Baghdad", "Asia/Bangkok",
-                "Asia/Beirut", "Asia/Colombo", "Asia/Damascus", "Asia/Dhaka", "Asia/Dubai",
-                "Asia/Hong_Kong", "Asia/Jakarta", "Asia/Jerusalem", "Asia/Kabul", "Asia/Karachi",
-                "Asia/Kathmandu", "Asia/Kolkata", "Asia/Kuala_Lumpur", "Asia/Manila",
-                "Asia/Nicosia", "Asia/Qatar", "Asia/Riyadh", "Asia/Seoul", "Asia/Shanghai",
-                "Asia/Singapore", "Asia/Taipei", "Asia/Tehran", "Asia/Tokyo", "Asia/Ulaanbaatar",
-                "Asia/Vladivostok", "Atlantic/Azores", "Atlantic/Cape_Verde", "Atlantic/Reykjavik",
-                "Australia/Adelaide", "Australia/Brisbane", "Australia/Darwin", "Australia/Hobart",
-                "Australia/Perth", "Australia/Sydney", "Europe/Amsterdam", "Europe/Athens",
-                "Europe/Berlin", "Europe/Brussels", "Europe/Bucharest", "Europe/Budapest",
-                "Europe/Copenhagen", "Europe/Dublin", "Europe/Helsinki", "Europe/Istanbul",
-                "Europe/Kaliningrad", "Europe/Kiev", "Europe/Lisbon", "Europe/London",
-                "Europe/Madrid", "Europe/Moscow", "Europe/Oslo", "Europe/Paris", "Europe/Prague",
-                "Europe/Rome", "Europe/Sofia", "Europe/Stockholm", "Europe/Tallinn", "Europe/Vienna",
-                "Europe/Vilnius", "Europe/Warsaw", "Europe/Zurich", "Pacific/Auckland",
-                "Pacific/Chatham", "Pacific/Fiji", "Pacific/Honolulu", "Pacific/Kiritimati",
-                "Pacific/Midway", "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Port_Moresby",
-                "Pacific/Tongatapu",
-                // ... and many more
-            ];
-
-            const populateTimezoneSelect = () => {
-                allTimezones.forEach(tz => {
-                    const option = document.createElement('option');
-                    option.value = tz;
-                    option.textContent = tz.replace(/_/g, ' '); // Simple formatting
-                    timezoneSelect.appendChild(option);
-                });
-            };
-            populateTimezoneSelect();
-
         });
     </script>
 </body>
