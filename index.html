@@ -185,6 +185,7 @@
             gap: calc(0.5 * var(--spacing-unit));
             cursor: grab; /* Indicates draggable */
             transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; /* For fullscreen button positioning */
         }
 
         body.dark-mode .time-card {
@@ -291,6 +292,7 @@
             margin-top: var(--spacing-unit);
             text-align: center;
             transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; /* For fullscreen button positioning */
         }
 
         body.dark-mode .utility-section {
@@ -358,6 +360,108 @@
         body.dark-mode footer {
             border-color: var(--border-dark);
         }
+
+        /* Fullscreen Button */
+        .fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 40px; /* Adjusted to make space for remove button */
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            font-size: 1em;
+            padding: 5px;
+            transition: color 0.2s ease;
+            line-height: 1; /* Ensure icon is centered */
+        }
+
+        .fullscreen-btn:hover {
+            color: var(--primary-color);
+        }
+
+        /* Fullscreen Overlay Styling */
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--background-light);
+            color: var(--text-light);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark-mode .fullscreen-overlay {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+
+        .fullscreen-overlay .current-time,
+        .fullscreen-overlay .timer-display {
+            font-size: 8em; /* Much larger for full screen */
+            margin-bottom: 20px;
+        }
+
+        .fullscreen-overlay h3,
+        .fullscreen-overlay h2 {
+            font-size: 3em; /* Larger title for full screen */
+            margin-bottom: 10px;
+        }
+
+        .fullscreen-overlay .date-display,
+        .fullscreen-overlay .offset-display {
+            font-size: 1.5em; /* Larger details for full screen */
+        }
+
+        .fullscreen-overlay .timer-controls {
+            display: flex;
+            flex-direction: row; /* Keep controls in a row */
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Hide other content when in fullscreen */
+        body.body--fullscreen > *:not(.fullscreen-overlay) {
+            display: none !important;
+        }
+        body.body--fullscreen header,
+        body.body--fullscreen main,
+        body.body--fullscreen footer {
+            display: none !important;
+        }
+
+        /* Close button for fullscreen - made smaller and less prominent */
+        .fullscreen-close-btn {
+            position: absolute;
+            top: 10px; /* Closer to the corner */
+            right: 10px; /* Closer to the corner */
+            background: none;
+            border: none;
+            color: var(--secondary-color); /* Less prominent color */
+            font-size: 1.2em; /* Smaller font size */
+            cursor: pointer;
+            z-index: 1000;
+            transition: color 0.2s ease;
+            padding: 5px 10px; /* Smaller padding */
+            border-radius: var(--border-radius); /* Rounded corners */
+        }
+
+        body.dark-mode .fullscreen-close-btn {
+            color: var(--secondary-color);
+        }
+
+        .fullscreen-close-btn:hover {
+            color: var(--primary-color); /* Still provides hover feedback */
+            background-color: rgba(0,0,0,0.1); /* Subtle background on hover */
+        }
     </style>
 </head>
 <body>
@@ -404,6 +508,7 @@
                 <span class="date-display"></span>
                 <span class="offset-display">GMT+10:00</span>
                 <button class="remove-card" aria-label="Remove card">&times;</button>
+                <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
             </div>
             <div class="time-card" data-timezone="America/Los_Angeles">
                 <h3 data-timezone-name="America/Los_Angeles"></h3>
@@ -411,6 +516,7 @@
                 <span class="date-display"></span>
                 <span class="offset-display">GMT-07:00</span>
                 <button class="remove-card" aria-label="Remove card">&times;</button>
+                <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
             </div>
         </section>
 
@@ -418,7 +524,7 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-unit);">
             <!-- Countdown Section -->
-            <section class="utility-section">
+            <section class="utility-section" id="countdown-section">
                 <h2 data-en="Countdown Timer" data-zh="倒计时">倒计时</h2>
                 <div class="timer-display" id="countdown-display">00:00:00</div>
                 <div class="timer-controls">
@@ -427,10 +533,11 @@
                     <button class="pause-btn" id="countdown-pause" data-en="Pause" data-zh="暂停">暂停</button>
                     <button class="reset-btn" id="countdown-reset" data-en="Reset" data-zh="重置">重置</button>
                 </div>
+                <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
             </section>
 
             <!-- Stopwatch Section -->
-            <section class="utility-section">
+            <section class="utility-section" id="stopwatch-section">
                 <h2 data-en="Stopwatch" data-zh="秒表">秒表</h2>
                 <div class="timer-display" id="stopwatch-display">00:00:00</div>
                 <div class="timer-controls">
@@ -438,6 +545,7 @@
                     <button class="pause-btn" id="stopwatch-pause" data-en="Pause" data-zh="暂停">暂停</button>
                     <button class="reset-btn" id="stopwatch-reset" data-en="Reset" data-zh="重置">重置</button>
                 </div>
+                <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
             </section>
         </div>
     </main>
@@ -463,7 +571,8 @@
                 'invalidCountdownInput': { en: 'Please enter a valid number of minutes for the countdown.', zh: '请输入有效的倒计时分钟数。' },
                 'countdownFinished': { en: 'Countdown finished!', zh: '倒计时结束！' },
                 'timezoneAlreadyAdded': { en: 'This timezone is already added.', zh: '此时区已添加。' },
-                'selectTimezoneToAdd': { en: 'Please select a timezone to add.', zh: '请选择要添加的时区。' }
+                'selectTimezoneToAdd': { en: 'Please select a timezone to add.', zh: '请选择要添加的时区。' },
+                'exitFullscreen': { en: 'Exit', zh: '退出' } // Changed to 'Exit' for a smaller text
             };
 
             // --- Theme Toggle ---
@@ -507,6 +616,18 @@
 
                 // Update dates and weekdays on all time cards
                 updateClocks();
+
+                // Update fullscreen button text if it's an emoji/symbol, or if it's text based
+                document.querySelectorAll('.fullscreen-btn').forEach(btn => {
+                    if (btn.dataset[lang]) { // Check if it has a localized data attribute
+                        btn.textContent = btn.dataset[lang];
+                    }
+                });
+                // Update close fullscreen button text
+                const fullscreenCloseBtn = document.querySelector('.fullscreen-close-btn');
+                if (fullscreenCloseBtn) {
+                    fullscreenCloseBtn.textContent = messages['exitFullscreen'][lang] || messages['exitFullscreen']['en'];
+                }
             };
 
             languageSwitcher.addEventListener('change', (event) => {
@@ -712,6 +833,7 @@
                         <span class="date-display"></span>
                         <span class="offset-display">---</span>
                         <button class="remove-card" aria-label="Remove card">&times;</button>
+                        <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button>
                     `;
                     worldClockDashboard.appendChild(newCard);
                     updateClocks();
@@ -829,6 +951,73 @@
             } else {
                 console.warn('SortableJS library not loaded. Drag and drop functionality will not work. Please include Sortable.min.js');
             }
+
+            // --- Fullscreen functionality ---
+            let currentFullscreenElement = null;
+
+            const enterFullscreen = (element) => {
+                // Store the original parent to return to
+                element.originalParent = element.parentNode;
+                element.originalNextSibling = element.nextSibling;
+
+                // Move element to body and add fullscreen class
+                body.appendChild(element);
+                element.classList.add('fullscreen-overlay');
+                body.classList.add('body--fullscreen');
+                currentFullscreenElement = element;
+
+                // Create and append close button
+                const closeBtn = document.createElement('button');
+                closeBtn.classList.add('fullscreen-close-btn');
+                const currentLang = languageSwitcher.value;
+                closeBtn.textContent = messages['exitFullscreen'][currentLang] || messages['exitFullscreen']['en'];
+                closeBtn.addEventListener('click', exitFullscreen);
+                element.appendChild(closeBtn);
+
+                // Hide the fullscreen button itself when in fullscreen
+                const fsBtn = element.querySelector('.fullscreen-btn');
+                if (fsBtn) {
+                    fsBtn.style.display = 'none';
+                }
+            };
+
+            const exitFullscreen = () => {
+                if (!currentFullscreenElement) return;
+
+                // Remove close button
+                const closeBtn = currentFullscreenElement.querySelector('.fullscreen-close-btn');
+                if (closeBtn) {
+                    closeBtn.removeEventListener('click', exitFullscreen);
+                    closeBtn.remove();
+                }
+
+                // Show the fullscreen button again
+                const fsBtn = currentFullscreenElement.querySelector('.fullscreen-btn');
+                if (fsBtn) {
+                    fsBtn.style.display = ''; // Revert to default display
+                }
+
+                // Restore element to its original position
+                if (currentFullscreenElement.originalNextSibling) {
+                    currentFullscreenElement.originalParent.insertBefore(currentFullscreenElement, currentFullscreenElement.originalNextSibling);
+                } else {
+                    currentFullscreenElement.originalParent.appendChild(currentFullscreenElement);
+                }
+
+                currentFullscreenElement.classList.remove('fullscreen-overlay');
+                body.classList.remove('body--fullscreen');
+                currentFullscreenElement = null;
+            };
+
+            // Add event listeners to all fullscreen buttons
+            document.querySelectorAll('.fullscreen-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const parentModule = event.target.closest('.time-card') || event.target.closest('.utility-section');
+                    if (parentModule) {
+                        enterFullscreen(parentModule);
+                    }
+                });
+            });
 
             // --- Message Box (instead of alert) ---
             const createMessageBox = () => {
