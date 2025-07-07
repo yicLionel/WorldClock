@@ -79,6 +79,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: var(--spacing-unit); /* Space between items when wrapped */
         }
 
         header h1 {
@@ -91,6 +93,7 @@
             display: flex;
             gap: var(--spacing-unit);
             align-items: center;
+            flex-wrap: wrap; /* Allow controls to wrap */
         }
 
         .theme-switcher {
@@ -461,6 +464,125 @@
         .fullscreen-close-btn:hover {
             color: var(--primary-color); /* Still provides hover feedback */
             background-color: rgba(0,0,0,0.1); /* Subtle background on hover */
+        }
+
+        /* --- Responsive Adjustments (Media Queries) --- */
+
+        /* Tablets and smaller desktops (max-width: 1024px) */
+        @media (max-width: 1024px) {
+            .container {
+                padding: calc(1.5 * var(--spacing-unit));
+            }
+
+            .time-card .current-time {
+                font-size: 3em;
+            }
+
+            .fullscreen-overlay .current-time,
+            .fullscreen-overlay .timer-display {
+                font-size: 6em;
+            }
+
+            .fullscreen-overlay h3,
+            .fullscreen-overlay h2 {
+                font-size: 2.5em;
+            }
+
+            .fullscreen-overlay .date-display,
+            .fullscreen-overlay .offset-display {
+                font-size: 1.2em;
+            }
+        }
+
+        /* Mobile devices (max-width: 768px) */
+        @media (max-width: 768px) {
+            header .container {
+                flex-direction: column; /* Stack title and controls */
+                align-items: flex-start; /* Align to left */
+                gap: calc(0.5 * var(--spacing-unit));
+            }
+
+            .controls {
+                width: 100%; /* Controls take full width */
+                justify-content: space-between; /* Space out theme and language toggles */
+            }
+
+            .add-region-section {
+                flex-direction: column; /* Stack search, select, and button */
+                align-items: stretch; /* Stretch items to full width */
+            }
+
+            .add-region-section input,
+            .add-region-section select,
+            .add-region-section button {
+                width: 100%; /* Make inputs, select, and button full width */
+                box-sizing: border-box;
+            }
+
+            .dashboard {
+                grid-template-columns: 1fr; /* Single column layout for cards */
+            }
+
+            .utility-section {
+                grid-template-columns: 1fr; /* Single column for countdown/stopwatch */
+            }
+
+            .time-card .current-time {
+                font-size: 2.5em; /* Smaller font for mobile cards */
+            }
+
+            .timer-display {
+                font-size: 2.5em; /* Smaller font for mobile timers */
+            }
+
+            .fullscreen-overlay .current-time,
+            .fullscreen-overlay .timer-display {
+                font-size: 4.5em; /* Adjust fullscreen time for smaller screens */
+            }
+
+            .fullscreen-overlay h3,
+            .fullscreen-overlay h2 {
+                font-size: 2em; /* Adjust fullscreen title for smaller screens */
+            }
+
+            .fullscreen-overlay .date-display,
+            .fullscreen-overlay .offset-display {
+                font-size: 1em; /* Adjust fullscreen details for smaller screens */
+            }
+
+            .timer-controls button {
+                padding: 8px 15px; /* Slightly smaller buttons for mobile */
+                font-size: 0.9em;
+            }
+        }
+
+        /* Very small mobile devices (max-width: 480px) */
+        @media (max-width: 480px) {
+            .container {
+                padding: var(--spacing-unit); /* Reduce padding further */
+            }
+
+            header h1 {
+                font-size: 1.5em;
+            }
+
+            .time-card .current-time {
+                font-size: 2em;
+            }
+
+            .timer-display {
+                font-size: 2em;
+            }
+
+            .fullscreen-overlay .current-time,
+            .fullscreen-overlay .timer-display {
+                font-size: 3.5em; /* Even smaller for very small screens */
+            }
+
+            .fullscreen-overlay h3,
+            .fullscreen-overlay h2 {
+                font-size: 1.5em;
+            }
         }
     </style>
 </head>
