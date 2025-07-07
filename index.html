@@ -186,9 +186,9 @@
             display: flex;
             flex-direction: column;
             gap: calc(0.5 * var(--spacing-unit));
-            cursor: grab; /* Indicates draggable */
             transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-            position: relative; /* For fullscreen button positioning */
+            position: relative; /* For button positioning */
+            padding-top: calc(1.5 * var(--spacing-unit) + 20px); /* Add space for buttons at top */
         }
 
         body.dark-mode .time-card {
@@ -198,7 +198,6 @@
         }
 
         .time-card:active {
-            cursor: grabbing;
             box-shadow: 0 6px 12px rgba(0,0,0,0.1); /* Lift effect on drag */
         }
 
@@ -231,20 +230,59 @@
             color: var(--secondary-color);
         }
 
-        .remove-card {
-            align-self: flex-end; /* Pushes button to the right */
+        /* Top-right button container for time cards */
+        .card-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px; /* Space between buttons */
+            z-index: 10; /* Ensure buttons are on top */
+        }
+
+        .remove-card, .fullscreen-btn, .drag-handle {
             background: none;
             border: none;
             color: var(--secondary-color);
             cursor: pointer;
-            font-size: 1.2em;
-            padding: 0;
-            transition: color 0.2s ease;
+            font-size: 1.2em; /* Slightly larger for easier tapping */
+            padding: 5px;
+            border-radius: var(--border-radius);
+            transition: color 0.2s ease, background-color 0.2s ease;
+            line-height: 1; /* Ensure icon is centered */
         }
 
         .remove-card:hover {
             color: #dc3545; /* Red for delete */
+            background-color: rgba(220, 53, 69, 0.1);
         }
+
+        .fullscreen-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        .drag-handle {
+            cursor: grab; /* Only the handle is draggable */
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .drag-handle:hover {
+            color: var(--primary-color);
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        body.dark-mode .remove-card:hover {
+            background-color: rgba(220, 53, 69, 0.2);
+        }
+        body.dark-mode .fullscreen-btn:hover,
+        body.dark-mode .drag-handle:hover {
+            background-color: rgba(0, 123, 255, 0.2);
+        }
+
 
         /* Add Region Section */
         .add-region-section {
@@ -364,25 +402,6 @@
             border-color: var(--border-dark);
         }
 
-        /* Fullscreen Button */
-        .fullscreen-btn {
-            position: absolute;
-            top: 10px;
-            right: 40px; /* Adjusted to make space for remove button */
-            background: none;
-            border: none;
-            color: var(--secondary-color);
-            cursor: pointer;
-            font-size: 1em;
-            padding: 5px;
-            transition: color 0.2s ease;
-            line-height: 1; /* Ensure icon is centered */
-        }
-
-        .fullscreen-btn:hover {
-            color: var(--primary-color);
-        }
-
         /* Fullscreen Overlay Styling */
         .fullscreen-overlay {
             position: fixed;
@@ -444,17 +463,17 @@
         /* Close button for fullscreen - made smaller and less prominent */
         .fullscreen-close-btn {
             position: absolute;
-            top: 10px; /* Closer to the corner */
-            right: 10px; /* Closer to the corner */
+            top: 10px;
+            right: 10px;
             background: none;
             border: none;
-            color: var(--secondary-color); /* Less prominent color */
-            font-size: 1.2em; /* Smaller font size */
+            color: var(--secondary-color);
+            font-size: 1.2em;
             cursor: pointer;
             z-index: 1000;
-            transition: color 0.2s ease;
-            padding: 5px 10px; /* Smaller padding */
-            border-radius: var(--border-radius); /* Rounded corners */
+            transition: color 0.2s ease, background-color 0.2s ease;
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
         }
 
         body.dark-mode .fullscreen-close-btn {
@@ -462,9 +481,13 @@
         }
 
         .fullscreen-close-btn:hover {
-            color: var(--primary-color); /* Still provides hover feedback */
-            background-color: rgba(0,0,0,0.1); /* Subtle background on hover */
+            color: var(--primary-color);
+            background-color: rgba(0,0,0,0.1);
         }
+        body.dark-mode .fullscreen-close-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
 
         /* --- Responsive Adjustments (Media Queries) --- */
 
@@ -628,20 +651,26 @@
         <section class="dashboard" id="world-clock-dashboard">
             <!-- Initial Time cards, their titles will be set by JS on load -->
             <div class="time-card" data-timezone="Australia/Melbourne">
+                <div class="card-actions">
+                    <button class="drag-handle" aria-label="Drag to reorder">&#x2261;</button> <!-- Drag handle -->
+                    <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
+                    <button class="remove-card" aria-label="Remove card">&times;</button>
+                </div>
                 <h3 data-timezone-name="Australia/Melbourne"></h3>
                 <span class="current-time">00:00:00</span>
                 <span class="date-display"></span>
                 <span class="offset-display">GMT+10:00</span>
-                <button class="remove-card" aria-label="Remove card">&times;</button>
-                <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
             </div>
             <div class="time-card" data-timezone="America/Los_Angeles">
+                <div class="card-actions">
+                    <button class="drag-handle" aria-label="Drag to reorder">&#x2261;</button> <!-- Drag handle -->
+                    <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
+                    <button class="remove-card" aria-label="Remove card">&times;</button>
+                </div>
                 <h3 data-timezone-name="America/Los_Angeles"></h3>
                 <span class="current-time">00:00:00</span>
                 <span class="date-display"></span>
                 <span class="offset-display">GMT-07:00</span>
-                <button class="remove-card" aria-label="Remove card">&times;</button>
-                <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button> <!-- Fullscreen icon -->
             </div>
         </section>
 
@@ -697,7 +726,7 @@
                 'countdownFinished': { en: 'Countdown finished!', zh: '倒计时结束！' },
                 'timezoneAlreadyAdded': { en: 'This timezone is already added.', zh: '此时区已添加。' },
                 'selectTimezoneToAdd': { en: 'Please select a timezone to add.', zh: '请选择要添加的时区。' },
-                'exitFullscreen': { en: 'Exit', zh: '退出' } // Changed to 'Exit' for a smaller text
+                'exitFullscreen': { en: 'Exit', zh: '退出' }
             };
 
             // --- Theme Toggle ---
@@ -744,7 +773,7 @@
 
                 // Update fullscreen button text if it's an emoji/symbol, or if it's text based
                 document.querySelectorAll('.fullscreen-btn').forEach(btn => {
-                    if (btn.dataset[lang]) { // Check if it has a localized data attribute
+                    if (btn.dataset[lang]) {
                         btn.textContent = btn.dataset[lang];
                     }
                 });
@@ -953,12 +982,15 @@
                     const displayCityName = timezoneDisplayNames[selectedTimezone][currentLang] || timezoneDisplayNames[selectedTimezone]['en'];
 
                     newCard.innerHTML = `
+                        <div class="card-actions">
+                            <button class="drag-handle" aria-label="Drag to reorder">&#x2261;</button>
+                            <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button>
+                            <button class="remove-card" aria-label="Remove card">&times;</button>
+                        </div>
                         <h3 data-timezone-name="${selectedTimezone}">${displayCityName}</h3>
                         <span class="current-time">--:--:--</span>
                         <span class="date-display"></span>
                         <span class="offset-display">---</span>
-                        <button class="remove-card" aria-label="Remove card">&times;</button>
-                        <button class="fullscreen-btn" data-en="&#x26F6;" data-zh="&#x26F6;" aria-label="Full screen">&#x26F6;</button>
                     `;
                     worldClockDashboard.appendChild(newCard);
                     updateClocks();
@@ -967,11 +999,13 @@
                         newCard.remove();
                     });
 
+                    // Reinitialize Sortable with handle
                     if (Sortable.active) {
                         Sortable.active.destroy();
                     }
                     new Sortable(worldClockDashboard, {
                         animation: 150,
+                        handle: '.drag-handle', // Specify the drag handle
                         ghostClass: 'sortable-ghost'
                     });
                 } else if (document.querySelector(`.time-card[data-timezone="${selectedTimezone}"]`)) {
@@ -1071,6 +1105,7 @@
             if (typeof Sortable !== 'undefined') {
                 new Sortable(worldClockDashboard, {
                     animation: 150,
+                    handle: '.drag-handle', // Specify the drag handle
                     ghostClass: 'sortable-ghost'
                 });
             } else {
@@ -1104,6 +1139,16 @@
                 if (fsBtn) {
                     fsBtn.style.display = 'none';
                 }
+                // Hide drag handle in fullscreen
+                const dragHandle = element.querySelector('.drag-handle');
+                if (dragHandle) {
+                    dragHandle.style.display = 'none';
+                }
+                // Hide remove button in fullscreen
+                const removeBtn = element.querySelector('.remove-card');
+                if (removeBtn) {
+                    removeBtn.style.display = 'none';
+                }
             };
 
             const exitFullscreen = () => {
@@ -1116,10 +1161,18 @@
                     closeBtn.remove();
                 }
 
-                // Show the fullscreen button again
+                // Show the fullscreen, drag, and remove buttons again
                 const fsBtn = currentFullscreenElement.querySelector('.fullscreen-btn');
                 if (fsBtn) {
                     fsBtn.style.display = ''; // Revert to default display
+                }
+                const dragHandle = currentFullscreenElement.querySelector('.drag-handle');
+                if (dragHandle) {
+                    dragHandle.style.display = ''; // Revert to default display
+                }
+                const removeBtn = currentFullscreenElement.querySelector('.remove-card');
+                if (removeBtn) {
+                    removeBtn.style.display = ''; // Revert to default display
                 }
 
                 // Restore element to its original position
